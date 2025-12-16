@@ -25,8 +25,8 @@
 #include <sys/time.h>
 
 /* WiFi */
-const char *ssid = "your_wifiK";
-const char *password = "the_password";
+const char *ssid = "ROBOTIIK";
+const char *password = "81895656";
 
 /* NTP */
 const char *ntpServer1 = "pool.ntp.org";
@@ -38,6 +38,13 @@ const int daylightOffset_sec = 0;
 #define DHTPIN 26
 #define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
+// Koefisien hasil regresi 
+const float HUM_A = 0.3587537;     // slope
+const float HUM_B = 43.1950459;    // intercept
+
+const float TMP_A = 0.4540112;     // slope
+const float TMP_B = 13.6536084;    // intercept
+
 
 /* Rain tipping-bucket */
 const int rainSensorPin = 34;
@@ -159,11 +166,17 @@ unsigned int calculateCRC(unsigned char * frame, unsigned char bufferSize)
   temp &= 0xFFFF;
   return temp;
 }
-float applyCalibration(float v_sensor){
-  const float a = 0.6481996437;
-  const float b = 0.5144997932;
-  return a * v_sensor + b;
+
+float calibrate(float raw) {
+
+  if (raw < 1.5) raw = 0.0;
+
+  if (raw < 3.99)
+    return 0.688 * raw + 0.598;
+
+  return 0.709 * raw + 0.204;
 }
+
 
 /* RS485: getWindSpeed */
 float getWindSpeed(byte address){
@@ -225,7 +238,7 @@ void IRAM_ATTR ISR_countTip() {
 }
 
 /* Task: Sensor Reader (DHT) */
-void taskSensor(void *pvParameters) {
+void taskdht(void *pvParameters) {
   static unsigned long prev = 0;
   const TickType_t delayTicks = pdMS_TO_TICKS(10000);
 
@@ -234,8 +247,11 @@ void taskSensor(void *pvParameters) {
     unsigned long dt = nowMs - prev;
     prev = nowMs;
 
-    float h = dht.readHumidity() - 5.646206897;
-    float t = dht.readTemperature() - 1.348965517;
+    float h_raw = dht.readHumidity();
+    float t_raw = dht.readTemperature();
+
+    float h = HUM_A * h_raw + HUM_B;
+    float t = TMP_A * t_raw + TMP_B;
 
     if (isnan(h) || isnan(t)) {
       Serial.println("[Sensor] Gagal membaca DHT22");
@@ -343,7 +359,7 @@ void taskWindRS485(void *pvParameters) {
     prev = nowMs;
 
     float spd = getWindSpeed(DEFAULT_DEVICE_ADDRESS);
-    float v_corr = a * spd;
+    float v_corr = calibrate(spd);
     if (v_corr < 0.05) v_corr = 0.0;
 
     if (!isnan(v_corr)) {
@@ -602,8 +618,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(rainSensorPin), ISR_countTip, RISING);
 
   BaseType_t ok;
-  ok = xTaskCreatePinnedToCore(taskSensor, "TaskSensor", 4096, NULL, 1, NULL, 1);
-  if (ok != pdPASS) Serial.println("Gagal buat TaskSensor");
+  ok = xTaskCreatePinnedToCore(taskdht, "taskdht", 4096, NULL, 1, NULL, 1);
+  if (ok != pdPASS) Serial.println("Gagal buat taskdht");
   ok = xTaskCreatePinnedToCore(taskRainAnalog, "TaskRainAnalog", 4096, NULL, 1, NULL, 1);
   if (ok != pdPASS) Serial.println("Gagal buat TaskRainAnalog");
   ok = xTaskCreatePinnedToCore(taskWindDir, "TaskWindDir", 4096, NULL, 1, NULL, 1);
