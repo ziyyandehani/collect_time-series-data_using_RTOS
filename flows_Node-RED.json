@@ -1,0 +1,1344 @@
+[
+    {
+        "id": "6021a33e595f7f8d",
+        "type": "tab",
+        "label": "Flow 5",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "cd47c68e40f852f2",
+        "type": "influxdb out",
+        "z": "6021a33e595f7f8d",
+        "influxdb": "dfc9963859484ab5",
+        "name": "Send data to influx",
+        "measurement": "weather_station",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ns",
+        "retentionPolicyV18Flux": "",
+        "org": "weatherproject",
+        "bucket": "data_cuaca",
+        "x": 890,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "403ac57852d13782",
+        "type": "mqtt in",
+        "z": "6021a33e595f7f8d",
+        "name": "",
+        "topic": "zizi12345/weather/station01",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "2f3222d770d39ad6",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 300,
+        "y": 280,
+        "wires": [
+            [
+                "15ba45877e026937",
+                "6898a25821a24f46",
+                "splitter"
+            ]
+        ]
+    },
+    {
+        "id": "15ba45877e026937",
+        "type": "json",
+        "z": "6021a33e595f7f8d",
+        "name": "",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 530,
+        "y": 280,
+        "wires": [
+            [
+                "b55a96d50db6c208"
+            ]
+        ]
+    },
+    {
+        "id": "b55a96d50db6c208",
+        "type": "function",
+        "z": "6021a33e595f7f8d",
+        "name": "function 4",
+        "func": "let p = msg.payload;\n\n// rename time → device_time\nif (p.time) {\n    p.device_time = p.time;\n    delete p.time;\n}\n\nmsg.measurement = \"weather_station\";\n\nmsg.fields = {\n    temperature: Number(p.temperature),\n    humidity: Number(p.humidity),\n    wind_speed: Number(p.wind_speed),\n    rain_mm: Number(p.rain_mm),\n    rain_analog: Number(p.rain_analog)\n};\n\nmsg.tags = {\n    wind_dir: String(p.wind_dir),\n    device_time: String(p.device_time)\n\n};\n\n// biarkan influx pakai timestamp server\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 280,
+        "wires": [
+            [
+                "cd47c68e40f852f2",
+                "e181c96f5f3a0ea8"
+            ]
+        ]
+    },
+    {
+        "id": "6898a25821a24f46",
+        "type": "debug",
+        "z": "6021a33e595f7f8d",
+        "name": "Data ESP",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "splitter",
+        "type": "function",
+        "z": "6021a33e595f7f8d",
+        "name": "Split Payload",
+        "func": "let d = msg.payload;\n\nreturn [\n    { payload: d.temperature },\n    { payload: d.humidity },\n    { payload: d.wind_speed },\n    { payload: d.rain_mm },\n    { payload: d.rain_status },\n    { payload: d.wind_dir }\n];",
+        "outputs": 6,
+        "x": 570,
+        "y": 400,
+        "wires": [
+            [
+                "8cb12188e2dd9fad",
+                "a526a3db7da41285"
+            ],
+            [
+                "a526a3db7da41285"
+            ],
+            [
+                "dfa_rain_chart"
+            ],
+            [
+                "81da8a8a624bdb83"
+            ],
+            [],
+            [
+                "339fbb48a40e889d",
+                "8612e51c0fdccf3b"
+            ]
+        ]
+    },
+    {
+        "id": "339fbb48a40e889d",
+        "type": "function",
+        "z": "6021a33e595f7f8d",
+        "name": "Arah Angin",
+        "func": "const arah = {\n  1: \"Utara\",\n  2: \"Timur Laut\",\n  3: \"Timur\",\n  4: \"Tenggara\",\n  5: \"Selatan\",\n  6: \"Barat Daya\",\n  7: \"Barat\",\n  8: \"Barat Laut\"\n};\n\nmsg.payload = arah[msg.payload] || \"-\";\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 500,
+        "wires": [
+            [
+                "632c99050e9a40ef"
+            ]
+        ]
+    },
+    {
+        "id": "dfa_rain_chart",
+        "type": "ui-chart",
+        "z": "6021a33e595f7f8d",
+        "group": "c895e1a10eb2ef4d",
+        "name": "Wind Speed",
+        "label": "Kecepatan Angin (m/s)",
+        "order": 3,
+        "chartType": "line",
+        "category": "",
+        "categoryType": "none",
+        "xAxisLabel": "Time",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "{HH}:{mm}",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "payload.wind_speed",
+        "yAxisPropertyType": "property",
+        "ymin": "0",
+        "ymax": "20",
+        "bins": "",
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "line",
+        "pointRadius": "2",
+        "showLegend": true,
+        "removeOlder": "30",
+        "removeOlderUnit": "60",
+        "removeOlderPoints": "",
+        "colors": [
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000"
+        ],
+        "textColor": [
+            "#1a1a1a"
+        ],
+        "textColorDefault": false,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": false,
+        "width": 8,
+        "height": 7,
+        "className": "",
+        "interpolation": "smooth",
+        "x": 790,
+        "y": 420,
+        "wires": [
+            [
+                "e55365e32433454e"
+            ]
+        ]
+    },
+    {
+        "id": "8cb12188e2dd9fad",
+        "type": "ui-chart",
+        "z": "6021a33e595f7f8d",
+        "group": "09bc46e7ed936bb1",
+        "name": "Temperature",
+        "label": "Suhu",
+        "order": 2,
+        "chartType": "line",
+        "category": "",
+        "categoryType": "none",
+        "xAxisLabel": "Time",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "{HH}:{mm}",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "payload.temperature",
+        "yAxisPropertyType": "msg",
+        "ymin": "0",
+        "ymax": "60",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": "2",
+        "showLegend": true,
+        "removeOlder": "30",
+        "removeOlderUnit": "60",
+        "removeOlderPoints": "",
+        "colors": [
+            "#5186f0",
+            "#5186f0",
+            "#5186f0",
+            "#5186f0",
+            "#5186f0",
+            "#5186f0",
+            "#5186f0",
+            "#5186f0",
+            "#5186f0"
+        ],
+        "textColor": [
+            "#000000"
+        ],
+        "textColorDefault": false,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": false,
+        "width": 7,
+        "height": 7,
+        "className": "",
+        "interpolation": "linear",
+        "x": 790,
+        "y": 340,
+        "wires": [
+            [
+                "3905d69ed4c844f7"
+            ]
+        ]
+    },
+    {
+        "id": "a526a3db7da41285",
+        "type": "ui-chart",
+        "z": "6021a33e595f7f8d",
+        "group": "09bc46e7ed936bb1",
+        "name": "Humidity ",
+        "label": "Kelembaban",
+        "order": 3,
+        "chartType": "line",
+        "category": "",
+        "categoryType": "none",
+        "xAxisLabel": "Time",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "{HH}:{mm}",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "payload.humidity",
+        "yAxisPropertyType": "msg",
+        "ymin": "0",
+        "ymax": "100",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": "2",
+        "showLegend": true,
+        "removeOlder": "30",
+        "removeOlderUnit": "60",
+        "removeOlderPoints": "",
+        "colors": [
+            "#a6ff94",
+            "#a6ff94",
+            "#a6ff94",
+            "#a6ff94",
+            "#a6ff94",
+            "#a6ff94",
+            "#a6ff94",
+            "#a6ff94",
+            "#a6ff94"
+        ],
+        "textColor": [
+            "#000000"
+        ],
+        "textColorDefault": false,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": false,
+        "width": 7,
+        "height": 7,
+        "className": "",
+        "interpolation": "linear",
+        "x": 780,
+        "y": 380,
+        "wires": [
+            [
+                "05340ea52b1e1d45"
+            ]
+        ]
+    },
+    {
+        "id": "81da8a8a624bdb83",
+        "type": "ui-chart",
+        "z": "6021a33e595f7f8d",
+        "group": "09bc46e7ed936bb1",
+        "name": "Curah Hujan",
+        "label": "Curah Hujan (mm)",
+        "order": 4,
+        "chartType": "line",
+        "category": "",
+        "categoryType": "none",
+        "xAxisLabel": "Time",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "{HH}:{mm}",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "payload.rain_mm",
+        "yAxisPropertyType": "msg",
+        "ymin": "0",
+        "ymax": "10",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "line",
+        "pointRadius": "2",
+        "showLegend": true,
+        "removeOlder": "30",
+        "removeOlderUnit": "60",
+        "removeOlderPoints": "",
+        "colors": [
+            "#75c6ff",
+            "#75c6ff",
+            "#75c6ff",
+            "#75c6ff",
+            "#75c6ff",
+            "#75c6ff",
+            "#75c6ff",
+            "#75c6ff",
+            "#75c6ff"
+        ],
+        "textColor": [
+            "#000000"
+        ],
+        "textColorDefault": false,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": false,
+        "width": 6,
+        "height": 7,
+        "className": "",
+        "interpolation": "linear",
+        "x": 790,
+        "y": 460,
+        "wires": [
+            [
+                "0672b783a483e952"
+            ]
+        ]
+    },
+    {
+        "id": "3905d69ed4c844f7",
+        "type": "ui-gauge",
+        "z": "6021a33e595f7f8d",
+        "name": "",
+        "group": "grp_main",
+        "order": 2,
+        "value": "payload",
+        "valueType": "msg",
+        "width": 5,
+        "height": 4,
+        "gtype": "gauge-half",
+        "gstyle": "needle",
+        "title": "Suhu",
+        "alwaysShowTitle": false,
+        "floatingTitlePosition": "top-left",
+        "units": "°C",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#5cd65c",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "35",
+                "color": "#ffc800",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "45",
+                "color": "#ea5353",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": "60",
+        "sizeThickness": "16",
+        "sizeGap": "4",
+        "sizeKeyThickness": "8",
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 950,
+        "y": 340,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "05340ea52b1e1d45",
+        "type": "ui-gauge",
+        "z": "6021a33e595f7f8d",
+        "name": "",
+        "group": "grp_main",
+        "order": 3,
+        "value": "payload",
+        "valueType": "msg",
+        "width": 5,
+        "height": 4,
+        "gtype": "gauge-half",
+        "gstyle": "needle",
+        "title": "Kelembaban",
+        "alwaysShowTitle": false,
+        "floatingTitlePosition": "top-left",
+        "units": "%",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#5cd65c",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "75",
+                "color": "#ffc800",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "90",
+                "color": "#ea5353",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": "100",
+        "sizeThickness": "13",
+        "sizeGap": "4",
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 970,
+        "y": 380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e55365e32433454e",
+        "type": "ui-gauge",
+        "z": "6021a33e595f7f8d",
+        "name": "",
+        "group": "grp_main",
+        "order": 4,
+        "value": "payload",
+        "valueType": "msg",
+        "width": 5,
+        "height": 4,
+        "gtype": "gauge-half",
+        "gstyle": "needle",
+        "title": "Kecepatan Angin",
+        "alwaysShowTitle": false,
+        "floatingTitlePosition": "top-left",
+        "units": "m/s",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#5cd65c",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "10",
+                "color": "#ffc800",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "20",
+                "color": "#ea5353",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": "20",
+        "sizeThickness": "13",
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 990,
+        "y": 420,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0672b783a483e952",
+        "type": "ui-gauge",
+        "z": "6021a33e595f7f8d",
+        "name": "Curah Hujan",
+        "group": "grp_main",
+        "order": 5,
+        "value": "payload",
+        "valueType": "msg",
+        "width": 5,
+        "height": 4,
+        "gtype": "gauge-half",
+        "gstyle": "needle",
+        "title": "Curah Hujan",
+        "alwaysShowTitle": false,
+        "floatingTitlePosition": "top-left",
+        "units": "mm",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#5cd65c",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "10",
+                "color": "#ffc800",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "20",
+                "color": "#ea5353",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": "30",
+        "sizeThickness": "13",
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 970,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "8612e51c0fdccf3b",
+        "type": "ui-gauge",
+        "z": "6021a33e595f7f8d",
+        "name": "Arah angin",
+        "group": "c895e1a10eb2ef4d",
+        "order": 4,
+        "value": "payload",
+        "valueType": "msg",
+        "width": 8,
+        "height": 5,
+        "gtype": "gauge-half",
+        "gstyle": "needle",
+        "title": "Arah angin",
+        "alwaysShowTitle": false,
+        "floatingTitlePosition": "top-left",
+        "units": "",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "1",
+                "color": "#248eff",
+                "text": "Utara",
+                "textType": "str"
+            },
+            {
+                "from": "2",
+                "color": "#248eff",
+                "text": "Timur Laut",
+                "textType": "str"
+            },
+            {
+                "from": "3",
+                "color": "#248eff",
+                "text": "Timur",
+                "textType": "str"
+            },
+            {
+                "from": "4",
+                "color": "#248eff",
+                "text": "Tenggara",
+                "textType": "str"
+            },
+            {
+                "from": "5",
+                "color": "#248eff",
+                "text": "Selatan",
+                "textType": "str"
+            },
+            {
+                "from": "6",
+                "color": "#248eff",
+                "text": "Barat Daya",
+                "textType": "str"
+            },
+            {
+                "from": "7",
+                "color": "#248eff",
+                "text": "Barat",
+                "textType": "str"
+            },
+            {
+                "from": "8",
+                "color": "#248eff",
+                "text": "Barat Laut",
+                "textType": "str"
+            }
+        ],
+        "min": "1",
+        "max": "8",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": "9",
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 970,
+        "y": 500,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "632c99050e9a40ef",
+        "type": "ui-text",
+        "z": "6021a33e595f7f8d",
+        "group": "c895e1a10eb2ef4d",
+        "order": 5,
+        "width": 8,
+        "height": 2,
+        "name": "Wind Direction Display",
+        "label": "",
+        "format": "<b>{{msg.payload}}</b>",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 18,
+        "color": "#000000",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1000,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "e181c96f5f3a0ea8",
+        "type": "debug",
+        "z": "6021a33e595f7f8d",
+        "name": "Data_in_Influx",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 880,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "33fa15a0395a9d3f",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 3,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "41ad1c020a0249b8",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 4,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "2225857f0ba294f4",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 5,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "aa29b46ad5b69592",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 6,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "81629762f1d4f5dc",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 7,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "c9b350fef5bda08f",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 10,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "a6e71a84466e50ae",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 11,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "482d7f3343df5f96",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 12,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "ec94de7404428f6e",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 13,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "26e1622e83bebac8",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 14,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "951f3e4624d4a71e",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 17,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "a19961b1f8513efb",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 18,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "26b7f19d75f7fc18",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 19,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "7e25af1f7c154297",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 20,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "480b852e3622b296",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 21,
+        "width": 11,
+        "height": 1
+    },
+    {
+        "id": "235f80830c4964d3",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 22,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "7c6b29e189f09a6b",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 23,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "a5b9c2fedb4ad97a",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 24,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "f7d7ea1125115694",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 25,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "8d24870dccd879e3",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 26,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "6a4eb3972f9e8e63",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 27,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "1d24b7158f4d45a0",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 28,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "e9c48c1e388b9a55",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 29,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "1c62809986898240",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 30,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "ef790d701a510698",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 31,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "def63d68bbc812bf",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 32,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "1f7d454c56704218",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 33,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "f9d4d2586e391d78",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 34,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "9147d3a386e9563c",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 35,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "59e42edc4d5fa881",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 36,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "7e34d61bbd24e68d",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 37,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "2f8ea4f6319aed63",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 38,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "4f8e7e2fab26ac5d",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 39,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "9dd10d6894491a12",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 40,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "e080b7819f637552",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 41,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "64c9859ea9cb7eb8",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 42,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "a06140fa01b11b72",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 43,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "4f4afef9be8206b3",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 44,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "a0a248e146f96ae1",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 45,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "c4a1ad88ebacc849",
+        "type": "ui_spacer",
+        "z": "6021a33e595f7f8d",
+        "name": "spacer",
+        "group": "9395ddf783dd8056",
+        "order": 47,
+        "width": 30,
+        "height": 1
+    },
+    {
+        "id": "dfc9963859484ab5",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "Influx",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://localhost:8086",
+        "timeout": "60",
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "2f3222d770d39ad6",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "broker.hivemq.com",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": "15",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "c895e1a10eb2ef4d",
+        "type": "ui-group",
+        "name": "Wind",
+        "page": "page_weather",
+        "width": "20",
+        "height": 1,
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "09bc46e7ed936bb1",
+        "type": "ui-group",
+        "name": "Trends",
+        "page": "page_weather",
+        "width": 20,
+        "height": 1,
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "grp_main",
+        "type": "ui-group",
+        "name": "Current",
+        "page": "page_weather",
+        "width": 20,
+        "height": 1,
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "9395ddf783dd8056",
+        "type": "ui_group",
+        "name": "Temperature and Huminity",
+        "tab": "841a1617c08c8d84",
+        "order": 1,
+        "disp": false,
+        "width": 30,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "page_weather",
+        "type": "ui-page",
+        "name": "Weather Station",
+        "ui": "d79928a378f0105f",
+        "path": "/weather",
+        "icon": "cloud",
+        "layout": "flex",
+        "theme": "theme_dark",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "841a1617c08c8d84",
+        "type": "ui_tab",
+        "name": "Monitoring",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "d79928a378f0105f",
+        "type": "ui-base",
+        "name": "My Dashboard",
+        "path": "/dashboard",
+        "appIcon": "🧭",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "theme_dark",
+        "type": "ui-theme",
+        "name": "Tesla",
+        "colors": {
+            "surface": "#3f6092",
+            "primary": "#ffffff",
+            "bgPage": "#ffffff",
+            "groupBg": "#ffffff",
+            "groupOutline": "#949494"
+        },
+        "sizes": {
+            "density": "compact",
+            "pagePadding": "12px",
+            "widgetGap": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px"
+        }
+    },
+    {
+        "id": "7bde9233a297f1c0",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0",
+            "@flowfuse/node-red-dashboard": "1.29.0",
+            "node-red-dashboard": "3.6.6"
+        }
+    }
+]
